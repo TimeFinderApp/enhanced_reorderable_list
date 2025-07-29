@@ -11,12 +11,14 @@ import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/widgets.dart' hide 
+    ReorderableList,
+    SliverReorderableList,
+    SliverReorderableListState;
+import 'package:flutter/material.dart' hide 
+    ReorderableListView;
 
-import 'debug.dart';
-import 'icons.dart';
-import 'material.dart';
-import 'theme.dart';
+import '../widgets/reorderable_list.dart';
 
 /// A list whose items the user can interactively reorder by dragging.
 ///
@@ -25,6 +27,31 @@ import 'theme.dart';
 /// This sample shows by dragging the user can reorder the items of the list.
 /// The [onReorder] parameter is required and will be called when a child
 /// widget is dragged to a new position.
+///
+/// ## Important: Using Enhanced Drag Listeners
+///
+/// When using [EnhancedReorderableListView] with `buildDefaultDragHandles: false`,
+/// you must wrap your items with the enhanced drag listeners from this package:
+/// - [EnhancedReorderableDelayedDragStartListener] for long-press drag (200ms delay)
+/// - [EnhancedReorderableDragStartListener] for immediate drag
+///
+/// Do NOT use Flutter's standard `ReorderableDelayedDragStartListener` or
+/// `ReorderableDragStartListener` as they are incompatible with the enhanced
+/// reorderable components.
+///
+/// ```dart
+/// EnhancedReorderableListView.builder(
+///   buildDefaultDragHandles: false,
+///   itemBuilder: (context, index) {
+///     return EnhancedReorderableDelayedDragStartListener(
+///       key: ValueKey(items[index].id),
+///       index: index,
+///       child: MyListItem(item: items[index]),
+///     );
+///   },
+///   // ...
+/// )
+/// ```
 ///
 /// {@tool dartpad}
 ///
@@ -75,7 +102,7 @@ class EnhancedReorderableListView extends StatefulWidget {
   ///
   ///   * [EnhancedReorderableListView.builder], which allows you to build a reorderable
   ///     list where the items are built as needed when scrolling the list.
-  ReorderableListView({
+  EnhancedReorderableListView({
     super.key,
     required List<Widget> children,
     required this.onReorder,
@@ -106,6 +133,7 @@ class EnhancedReorderableListView extends StatefulWidget {
     this.dragBoundaryProvider,
     this.mouseCursor,
     this.controller,
+    this.sliverKey,
     this.spreadEnabled = false,
     this.onSpreadInsert,
     this.spreadPlaceholderBuilder,
@@ -183,6 +211,7 @@ class EnhancedReorderableListView extends StatefulWidget {
     this.dragBoundaryProvider,
     this.mouseCursor,
     this.controller,
+    this.sliverKey,
     this.spreadEnabled = false,
     this.onSpreadInsert,
     this.spreadPlaceholderBuilder,
@@ -342,7 +371,7 @@ class EnhancedReorderableListView extends StatefulWidget {
   /// Controller for programmatically reordering items.
   ///
   /// This allows you to animate items to new positions without user interaction.
-  final ReorderableListController? controller;
+  final EnhancedReorderableListController? controller;
 
   /// Whether spread gesture is enabled for inserting items.
   final bool spreadEnabled;
@@ -356,13 +385,16 @@ class EnhancedReorderableListView extends StatefulWidget {
   /// Height of the spread placeholder.
   final double spreadPlaceholderHeight;
 
+  /// Key to pass to the internal EnhancedSliverReorderableList
+  final Key? sliverKey;
+
   @override
-  State<EnhancedReorderableListView> createState() => _ReorderableListViewState();
+  State<EnhancedReorderableListView> createState() => _EnhancedReorderableListViewState();
 }
 
-class _ReorderableListViewState extends State<EnhancedReorderableListView> {
+class _EnhancedReorderableListViewState extends State<EnhancedReorderableListView> {
   final ValueNotifier<bool> _dragging = ValueNotifier<bool>(false);
-  final GlobalKey<SliverReorderableListState> _sliverListKey = GlobalKey<SliverReorderableListState>();
+  final GlobalKey<EnhancedSliverReorderableListState> _sliverListKey = GlobalKey<EnhancedSliverReorderableListState>();
 
   @override
   void initState() {
@@ -371,7 +403,7 @@ class _ReorderableListViewState extends State<EnhancedReorderableListView> {
   }
 
   @override
-  void didUpdateWidget(ReorderableListView oldWidget) {
+  void didUpdateWidget(EnhancedReorderableListView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.controller != oldWidget.controller) {
       oldWidget.controller?._detach();
@@ -444,7 +476,7 @@ class _ReorderableListViewState extends State<EnhancedReorderableListView> {
                     bottom: 8,
                     child: Align(
                       alignment: AlignmentDirectional.bottomCenter,
-                      child: ReorderableDragStartListener(index: index, child: dragHandle),
+                      child: EnhancedReorderableDragStartListener(index: index, child: dragHandle),
                     ),
                   ),
                 ],
@@ -461,7 +493,7 @@ class _ReorderableListViewState extends State<EnhancedReorderableListView> {
                     end: 8,
                     child: Align(
                       alignment: AlignmentDirectional.centerEnd,
-                      child: ReorderableDragStartListener(index: index, child: dragHandle),
+                      child: EnhancedReorderableDragStartListener(index: index, child: dragHandle),
                     ),
                   ),
                 ],
@@ -471,7 +503,7 @@ class _ReorderableListViewState extends State<EnhancedReorderableListView> {
         case TargetPlatform.iOS:
         case TargetPlatform.android:
         case TargetPlatform.fuchsia:
-          return ReorderableDelayedDragStartListener(key: itemGlobalKey, index: index, child: item);
+          return EnhancedReorderableDelayedDragStartListener(key: itemGlobalKey, index: index, child: item);
       }
     }
 
@@ -532,7 +564,7 @@ class _ReorderableListViewState extends State<EnhancedReorderableListView> {
       anchor: widget.anchor,
       cacheExtent: widget.cacheExtent,
       dragStartBehavior: widget.dragStartBehavior,
-      keyboardDismissBehavior: widget.keyboardDismissBehavior,
+      keyboardDismissBehavior: widget.keyboardDismissBehavior ?? ScrollViewKeyboardDismissBehavior.manual,
       restorationId: widget.restorationId,
       clipBehavior: widget.clipBehavior,
       slivers: <Widget>[
@@ -540,7 +572,7 @@ class _ReorderableListViewState extends State<EnhancedReorderableListView> {
           SliverPadding(padding: headerPadding, sliver: SliverToBoxAdapter(child: widget.header)),
         SliverPadding(
           padding: listPadding,
-          sliver: SliverReorderableList(
+          sliver: EnhancedSliverReorderableList(
             key: _sliverListKey,
             itemBuilder: _itemBuilder,
             itemExtent: widget.itemExtent,
@@ -560,11 +592,6 @@ class _ReorderableListViewState extends State<EnhancedReorderableListView> {
             proxyDecorator: widget.proxyDecorator ?? _proxyDecorator,
             autoScrollerVelocityScalar: widget.autoScrollerVelocityScalar,
             dragBoundaryProvider: widget.dragBoundaryProvider,
-            controller: widget.controller,
-            spreadEnabled: widget.spreadEnabled,
-            onSpreadInsert: widget.onSpreadInsert,
-            spreadPlaceholderBuilder: widget.spreadPlaceholderBuilder,
-            spreadPlaceholderHeight: widget.spreadPlaceholderHeight,
           ),
         ),
         if (widget.footer != null)
@@ -602,10 +629,10 @@ class _ReorderableListViewChildGlobalKey extends GlobalObjectKey {
 
 
 /// Controller for programmatically reordering items in a ReorderableListView.
-class ReorderableListController {
-  _ReorderableListViewState? _state;
+class EnhancedReorderableListController {
+  _EnhancedReorderableListViewState? _state;
 
-  void _attach(_ReorderableListViewState state) => _state = state;
+  void _attach(_EnhancedReorderableListViewState state) => _state = state;
   void _detach() => _state = null;
 
   /// Animates an item from one position to another.
