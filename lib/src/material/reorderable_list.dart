@@ -105,6 +105,7 @@ class EnhancedReorderableListView extends StatefulWidget {
     this.autoScrollerVelocityScalar,
     this.dragBoundaryProvider,
     this.mouseCursor,
+    this.controller,
     this.spreadEnabled = false,
     this.onSpreadInsert,
     this.spreadPlaceholderBuilder,
@@ -181,6 +182,7 @@ class EnhancedReorderableListView extends StatefulWidget {
     this.autoScrollerVelocityScalar,
     this.dragBoundaryProvider,
     this.mouseCursor,
+    this.controller,
     this.spreadEnabled = false,
     this.onSpreadInsert,
     this.spreadPlaceholderBuilder,
@@ -337,12 +339,66 @@ class EnhancedReorderableListView extends StatefulWidget {
   ///  hovering, and [SystemMouseCursors.grabbing] when dragging.
   final MouseCursor? mouseCursor;
 
+  /// Controller for programmatically reordering items.
+  ///
+  /// This allows you to animate items to new positions without user interaction.
+  final ReorderableListController? controller;
+
+  /// Whether spread gesture is enabled for inserting items.
+  final bool spreadEnabled;
+
+  /// Callback when a spread gesture triggers an insert.
+  final void Function(int index)? onSpreadInsert;
+
+  /// Builder for the spread placeholder widget.
+  final Widget Function(BuildContext context, int index)? spreadPlaceholderBuilder;
+
+  /// Height of the spread placeholder.
+  final double spreadPlaceholderHeight;
+
   @override
   State<EnhancedReorderableListView> createState() => _ReorderableListViewState();
 }
 
 class _ReorderableListViewState extends State<EnhancedReorderableListView> {
   final ValueNotifier<bool> _dragging = ValueNotifier<bool>(false);
+  final GlobalKey<SliverReorderableListState> _sliverListKey = GlobalKey<SliverReorderableListState>();
+
+  @override
+  void initState() {
+    super.initState();
+    widget.controller?._attach(this);
+  }
+
+  @override
+  void didUpdateWidget(ReorderableListView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.controller != oldWidget.controller) {
+      oldWidget.controller?._detach();
+      widget.controller?._attach(this);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.controller?._detach();
+    _dragging.dispose();
+    super.dispose();
+  }
+
+  Future<void> _animateItemToIndex({
+    required int fromIndex,
+    required int toIndex,
+    Duration duration = const Duration(milliseconds: 500),
+    Curve curve = Curves.easeInOut,
+  }) async {
+    return _sliverListKey.currentState?.animateItemToIndex(
+      fromIndex: fromIndex,
+      toIndex: toIndex,
+      duration: duration,
+      curve: curve,
+    );
+  }
 
   Widget _itemBuilder(BuildContext context, int index) {
     final Widget item = widget.itemBuilder(context, index);
@@ -435,12 +491,6 @@ class _ReorderableListViewState extends State<EnhancedReorderableListView> {
   }
 
   @override
-  void dispose() {
-    _dragging.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     assert(debugCheckHasMaterialLocalizations(context));
     assert(debugCheckHasOverlay(context));
@@ -490,7 +540,8 @@ class _ReorderableListViewState extends State<EnhancedReorderableListView> {
           SliverPadding(padding: headerPadding, sliver: SliverToBoxAdapter(child: widget.header)),
         SliverPadding(
           padding: listPadding,
-          sliver: EnhancedSliverReorderableList(
+          sliver: SliverReorderableList(
+            key: _sliverListKey,
             itemBuilder: _itemBuilder,
             itemExtent: widget.itemExtent,
             itemExtentBuilder: widget.itemExtentBuilder,
@@ -509,6 +560,11 @@ class _ReorderableListViewState extends State<EnhancedReorderableListView> {
             proxyDecorator: widget.proxyDecorator ?? _proxyDecorator,
             autoScrollerVelocityScalar: widget.autoScrollerVelocityScalar,
             dragBoundaryProvider: widget.dragBoundaryProvider,
+            controller: widget.controller,
+            spreadEnabled: widget.spreadEnabled,
+            onSpreadInsert: widget.onSpreadInsert,
+            spreadPlaceholderBuilder: widget.spreadPlaceholderBuilder,
+            spreadPlaceholderHeight: widget.spreadPlaceholderHeight,
           ),
         ),
         if (widget.footer != null)
@@ -542,4 +598,28 @@ class _ReorderableListViewChildGlobalKey extends GlobalObjectKey {
 
   @override
   int get hashCode => Object.hash(subKey, state);
+}
+
+
+/// Controller for programmatically reordering items in a ReorderableListView.
+class ReorderableListController {
+  _ReorderableListViewState? _state;
+
+  void _attach(_ReorderableListViewState state) => _state = state;
+  void _detach() => _state = null;
+
+  /// Animates an item from one position to another.
+  Future<void> animateItemToIndex({
+    required int fromIndex,
+    required int toIndex,
+    Duration duration = const Duration(milliseconds: 500),
+    Curve curve = Curves.easeInOut,
+  }) async {
+    return _state?._animateItemToIndex(
+      fromIndex: fromIndex,
+      toIndex: toIndex,
+      duration: duration,
+      curve: curve,
+    );
+  }
 }
