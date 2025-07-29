@@ -36,34 +36,34 @@ import 'theme.dart';
 /// to move the item. On [TargetPlatformVariant.mobile], no drag handle will be
 /// added, but when the user long presses anywhere on the item it will start
 /// moving the item. Displaying drag handles can be controlled with
-/// [ReorderableListView.buildDefaultDragHandles].
+/// [EnhancedReorderableListView.buildDefaultDragHandles].
 ///
 /// All list items must have a key.
 ///
-/// This example demonstrates using the [ReorderableListView.proxyDecorator] callback
+/// This example demonstrates using the [EnhancedReorderableListView.proxyDecorator] callback
 /// to customize the appearance of a list item while it's being dragged.
 ///
 /// {@tool dartpad}
-/// While a drag is underway, the widget returned by the [ReorderableListView.proxyDecorator]
+/// While a drag is underway, the widget returned by the [EnhancedReorderableListView.proxyDecorator]
 /// callback serves as a "proxy" (a substitute) for the item in the list. The proxy is
-/// created with the original list item as its child. The [ReorderableListView.proxyDecorator]
+/// created with the original list item as its child. The [EnhancedReorderableListView.proxyDecorator]
 /// callback in this example is similar to the default one except that it changes the
 /// proxy item's background color.
 ///
 /// ** See code in examples/api/lib/material/reorderable_list/reorderable_list_view.1.dart **
 /// {@end-tool}
 ///
-/// This example demonstrates using the [ReorderableListView.proxyDecorator] callback to
+/// This example demonstrates using the [EnhancedReorderableListView.proxyDecorator] callback to
 /// customize the appearance of a [Card] while it's being dragged.
 ///
 /// {@tool dartpad}
 /// The default [proxyDecorator] wraps the dragged item in a [Material] widget and animates
-/// its elevation. This example demonstrates how to use the [ReorderableListView.proxyDecorator]
+/// its elevation. This example demonstrates how to use the [EnhancedReorderableListView.proxyDecorator]
 /// callback to update the dragged card elevation without inserted a new [Material] widget.
 ///
 /// ** See code in examples/api/lib/material/reorderable_list/reorderable_list_view.2.dart **
 /// {@end-tool}
-class ReorderableListView extends StatefulWidget {
+class EnhancedReorderableListView extends StatefulWidget {
   /// Creates a reorderable list from a pre-built list of widgets.
   ///
   /// This constructor is appropriate for lists with a small number of
@@ -73,7 +73,7 @@ class ReorderableListView extends StatefulWidget {
   ///
   /// See also:
   ///
-  ///   * [ReorderableListView.builder], which allows you to build a reorderable
+  ///   * [EnhancedReorderableListView.builder], which allows you to build a reorderable
   ///     list where the items are built as needed when scrolling the list.
   ReorderableListView({
     super.key,
@@ -81,6 +81,7 @@ class ReorderableListView extends StatefulWidget {
     required this.onReorder,
     this.onReorderStart,
     this.onReorderEnd,
+    this.onReorderUpdate,
     this.itemExtent,
     this.itemExtentBuilder,
     this.prototypeItem,
@@ -105,6 +106,10 @@ class ReorderableListView extends StatefulWidget {
     this.dragBoundaryProvider,
     this.mouseCursor,
     this.controller,
+    this.spreadEnabled = false,
+    this.onSpreadInsert,
+    this.spreadPlaceholderBuilder,
+    this.spreadPlaceholderHeight = 92.0,
   }) : assert(
          (itemExtent == null && prototypeItem == null) ||
              (itemExtent == null && itemExtentBuilder == null) ||
@@ -136,7 +141,7 @@ class ReorderableListView extends StatefulWidget {
   /// on demand using this constructor's `itemBuilder` callback.
   ///
   /// This example creates a list using the
-  /// [ReorderableListView.builder] constructor. Using the [IndexedWidgetBuilder], The
+  /// [EnhancedReorderableListView.builder] constructor. Using the [IndexedWidgetBuilder], The
   /// list items are built lazily on demand.
   /// {@tool dartpad}
   ///
@@ -146,13 +151,14 @@ class ReorderableListView extends StatefulWidget {
   ///
   ///   * [ReorderableListView], which allows you to build a reorderable
   ///     list with all the items passed into the constructor.
-  const ReorderableListView.builder({
+  const EnhancedReorderableListView.builder({
     super.key,
     required this.itemBuilder,
     required this.itemCount,
     required this.onReorder,
     this.onReorderStart,
     this.onReorderEnd,
+    this.onReorderUpdate,
     this.itemExtent,
     this.itemExtentBuilder,
     this.prototypeItem,
@@ -177,6 +183,10 @@ class ReorderableListView extends StatefulWidget {
     this.dragBoundaryProvider,
     this.mouseCursor,
     this.controller,
+    this.spreadEnabled = false,
+    this.onSpreadInsert,
+    this.spreadPlaceholderBuilder,
+    this.spreadPlaceholderHeight = 92.0,
   }) : assert(itemCount >= 0),
        assert(
          (itemExtent == null && prototypeItem == null) ||
@@ -199,6 +209,21 @@ class ReorderableListView extends StatefulWidget {
 
   /// {@macro flutter.widgets.reorderable_list.onReorderEnd}
   final void Function(int index)? onReorderEnd;
+
+  /// A callback that is called continuously during item drag operations.
+  ///
+  /// This callback fires whenever the dragged item moves to a new potential
+  /// position, providing continuous feedback during the drag.
+  ///
+  /// The [fromIndex] parameter is the original index of the dragged item.
+  /// The [toIndex] parameter is the final index where the item would be
+  /// positioned if dropped at the current location.
+  ///
+  /// This is useful for providing immediate user feedback such as haptic
+  /// responses or visual indicators as the user drags an item through the list.
+  ///
+  /// See also: [onReorderStart], [onReorderEnd], and [onReorder].
+  final void Function(int fromIndex, int toIndex)? onReorderUpdate;
 
   /// {@macro flutter.widgets.reorderable_list.proxyDecorator}
   final ReorderItemProxyDecorator? proxyDecorator;
@@ -296,7 +321,7 @@ class ReorderableListView extends StatefulWidget {
 
   /// {@macro flutter.widgets.EdgeDraggingAutoScroller.velocityScalar}
   ///
-  /// {@macro flutter.widgets.SliverReorderableList.autoScrollerVelocityScalar.default}
+  /// {@macro flutter.widgets.EnhancedSliverReorderableList.autoScrollerVelocityScalar.default}
   final double? autoScrollerVelocityScalar;
 
   /// {@macro flutter.widgets.reorderable_list.dragBoundaryProvider}
@@ -319,11 +344,23 @@ class ReorderableListView extends StatefulWidget {
   /// This allows you to animate items to new positions without user interaction.
   final ReorderableListController? controller;
 
+  /// Whether spread gesture is enabled for inserting items.
+  final bool spreadEnabled;
+
+  /// Callback when a spread gesture triggers an insert.
+  final void Function(int index)? onSpreadInsert;
+
+  /// Builder for the spread placeholder widget.
+  final Widget Function(BuildContext context, int index)? spreadPlaceholderBuilder;
+
+  /// Height of the spread placeholder.
+  final double spreadPlaceholderHeight;
+
   @override
-  State<ReorderableListView> createState() => _ReorderableListViewState();
+  State<EnhancedReorderableListView> createState() => _ReorderableListViewState();
 }
 
-class _ReorderableListViewState extends State<ReorderableListView> {
+class _ReorderableListViewState extends State<EnhancedReorderableListView> {
   final ValueNotifier<bool> _dragging = ValueNotifier<bool>(false);
   final GlobalKey<SliverReorderableListState> _sliverListKey = GlobalKey<SliverReorderableListState>();
 
@@ -519,9 +556,15 @@ class _ReorderableListViewState extends State<ReorderableListView> {
               _dragging.value = false;
               widget.onReorderEnd?.call(index);
             },
+            onReorderUpdate: widget.onReorderUpdate,
             proxyDecorator: widget.proxyDecorator ?? _proxyDecorator,
             autoScrollerVelocityScalar: widget.autoScrollerVelocityScalar,
             dragBoundaryProvider: widget.dragBoundaryProvider,
+            controller: widget.controller,
+            spreadEnabled: widget.spreadEnabled,
+            onSpreadInsert: widget.onSpreadInsert,
+            spreadPlaceholderBuilder: widget.spreadPlaceholderBuilder,
+            spreadPlaceholderHeight: widget.spreadPlaceholderHeight,
           ),
         ),
         if (widget.footer != null)
