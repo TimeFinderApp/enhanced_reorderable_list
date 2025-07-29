@@ -1,0 +1,19 @@
+name: enhanced_reorderable_list
+description: Enhanced Flutter ReorderableListView with real-time feedback and programmatic reordering
+version: 0.0.1
+homepage: https://github.com/lukememet/enhanced_reorderable_list
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: ">=3.32.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
