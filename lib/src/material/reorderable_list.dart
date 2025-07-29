@@ -81,6 +81,7 @@ class EnhancedReorderableListView extends StatefulWidget {
     required this.onReorder,
     this.onReorderStart,
     this.onReorderEnd,
+    this.onReorderUpdate,
     this.itemExtent,
     this.itemExtentBuilder,
     this.prototypeItem,
@@ -156,6 +157,7 @@ class EnhancedReorderableListView extends StatefulWidget {
     required this.onReorder,
     this.onReorderStart,
     this.onReorderEnd,
+    this.onReorderUpdate,
     this.itemExtent,
     this.itemExtentBuilder,
     this.prototypeItem,
@@ -205,6 +207,21 @@ class EnhancedReorderableListView extends StatefulWidget {
 
   /// {@macro flutter.widgets.reorderable_list.onReorderEnd}
   final void Function(int index)? onReorderEnd;
+
+  /// A callback that is called continuously during item drag operations.
+  ///
+  /// This callback fires whenever the dragged item moves to a new potential
+  /// position, providing continuous feedback during the drag.
+  ///
+  /// The [fromIndex] parameter is the original index of the dragged item.
+  /// The [toIndex] parameter is the final index where the item would be
+  /// positioned if dropped at the current location.
+  ///
+  /// This is useful for providing immediate user feedback such as haptic
+  /// responses or visual indicators as the user drags an item through the list.
+  ///
+  /// See also: [onReorderStart], [onReorderEnd], and [onReorder].
+  final void Function(int fromIndex, int toIndex)? onReorderUpdate;
 
   /// {@macro flutter.widgets.reorderable_list.proxyDecorator}
   final ReorderItemProxyDecorator? proxyDecorator;
@@ -488,6 +505,7 @@ class _ReorderableListViewState extends State<EnhancedReorderableListView> {
               _dragging.value = false;
               widget.onReorderEnd?.call(index);
             },
+            onReorderUpdate: widget.onReorderUpdate,
             proxyDecorator: widget.proxyDecorator ?? _proxyDecorator,
             autoScrollerVelocityScalar: widget.autoScrollerVelocityScalar,
             dragBoundaryProvider: widget.dragBoundaryProvider,
