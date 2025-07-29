@@ -134,7 +134,7 @@ typedef ReorderDragBoundaryProvider = DragBoundaryDelegate<Rect>? Function(Build
 /// This widget's [ReorderableListState] can be used to manually start an item
 /// reorder, or cancel a current drag. To refer to the
 /// [ReorderableListState] either provide a [GlobalKey] or use the static
-/// [ReorderableList.of] method from an item's build method.
+/// [EnhancedReorderableList.of] method from an item's build method.
 ///
 /// See also:
 ///
@@ -142,7 +142,7 @@ typedef ReorderDragBoundaryProvider = DragBoundaryDelegate<Rect>? Function(Build
 ///    its items.
 ///  * [ReorderableListView], a Material Design list that allows the user to
 ///    reorder its items.
-class ReorderableList extends StatefulWidget {
+class EnhancedReorderableList extends StatefulWidget {
   /// Creates a scrolling container that allows the user to interactively
   /// reorder the list items.
   ///
@@ -303,7 +303,7 @@ class ReorderableList extends StatefulWidget {
 
   /// {@macro flutter.widgets.EdgeDraggingAutoScroller.velocityScalar}
   ///
-  /// {@macro flutter.widgets.SliverReorderableList.autoScrollerVelocityScalar.default}
+  /// {@macro flutter.widgets.SliverEnhancedReorderableList.autoScrollerVelocityScalar.default}
   final double? autoScrollerVelocityScalar;
 
   /// {@template flutter.widgets.reorderable_list.dragBoundaryProvider}
@@ -335,14 +335,14 @@ class ReorderableList extends StatefulWidget {
       if (result == null) {
         throw FlutterError.fromParts(<DiagnosticsNode>[
           ErrorSummary(
-            'ReorderableList.of() called with a context that does not contain a ReorderableList.',
+            'EnhancedReorderableList.of() called with a context that does not contain a EnhancedReorderableList.',
           ),
           ErrorDescription(
-            'No ReorderableList ancestor could be found starting from the context that was passed to ReorderableList.of().',
+            'No ReorderableList ancestor could be found starting from the context that was passed to EnhancedReorderableList.of().',
           ),
           ErrorHint(
             'This can happen when the context provided is from the same StatefulWidget that '
-            'built the ReorderableList. Please see the ReorderableList documentation for examples '
+            'built the EnhancedReorderableList. Please see the ReorderableList documentation for examples '
             'of how to refer to an ReorderableListState object:\n'
             '  https://api.flutter.dev/flutter/widgets/ReorderableListState-class.html',
           ),
@@ -399,7 +399,7 @@ class ReorderableList extends StatefulWidget {
 /// // ...
 /// listKey.currentState!.cancelReorder();
 /// ```
-class ReorderableListState extends State<ReorderableList> {
+class ReorderableListState extends State<EnhancedReorderableList> {
   final GlobalKey<SliverReorderableListState> _sliverReorderableListKey = GlobalKey();
 
   /// Initiate the dragging of the item at [index] that was started with
@@ -490,7 +490,7 @@ class ReorderableListState extends State<ReorderableList> {
 /// This widget's [SliverReorderableListState] can be used to manually start an item
 /// reorder, or cancel a current drag that's already underway. To refer to the
 /// [SliverReorderableListState] either provide a [GlobalKey] or use the static
-/// [SliverReorderableList.of] method from an item's build method.
+/// [SliverEnhancedReorderableList.of] method from an item's build method.
 ///
 /// See also:
 ///
@@ -498,7 +498,7 @@ class ReorderableListState extends State<ReorderableList> {
 ///    its items.
 ///  * [ReorderableListView], a Material Design list that allows the user to
 ///    reorder its items.
-class SliverReorderableList extends StatefulWidget {
+class EnhancedSliverReorderableList extends StatefulWidget {
   /// Creates a sliver list that allows the user to interactively reorder its
   /// items.
   ///
@@ -561,7 +561,7 @@ class SliverReorderableList extends StatefulWidget {
 
   /// {@macro flutter.widgets.EdgeDraggingAutoScroller.velocityScalar}
   ///
-  /// {@template flutter.widgets.SliverReorderableList.autoScrollerVelocityScalar.default}
+  /// {@template flutter.widgets.SliverEnhancedReorderableList.autoScrollerVelocityScalar.default}
   /// Defaults to 50 if not set or set to null.
   /// {@endtemplate}
   final double autoScrollerVelocityScalar;
@@ -594,14 +594,14 @@ class SliverReorderableList extends StatefulWidget {
       if (result == null) {
         throw FlutterError.fromParts(<DiagnosticsNode>[
           ErrorSummary(
-            'SliverReorderableList.of() called with a context that does not contain a SliverReorderableList.',
+            'SliverEnhancedReorderableList.of() called with a context that does not contain a SliverEnhancedReorderableList.',
           ),
           ErrorDescription(
-            'No SliverReorderableList ancestor could be found starting from the context that was passed to SliverReorderableList.of().',
+            'No SliverReorderableList ancestor could be found starting from the context that was passed to SliverEnhancedReorderableList.of().',
           ),
           ErrorHint(
             'This can happen when the context provided is from the same StatefulWidget that '
-            'built the SliverReorderableList. Please see the SliverReorderableList documentation for examples '
+            'built the SliverEnhancedReorderableList. Please see the SliverReorderableList documentation for examples '
             'of how to refer to an SliverReorderableList object:\n'
             '  https://api.flutter.dev/flutter/widgets/SliverReorderableListState-class.html',
           ),
@@ -666,8 +666,8 @@ class SliverReorderableList extends StatefulWidget {
 ///
 /// [ReorderableDragStartListener] and [ReorderableDelayedDragStartListener]
 /// refer to their [SliverReorderableList] with the static
-/// [SliverReorderableList.of] method.
-class SliverReorderableListState extends State<SliverReorderableList>
+/// [SliverEnhancedReorderableList.of] method.
+class SliverReorderableListState extends State<EnhancedSliverReorderableList>
     with TickerProviderStateMixin {
   // Map of index -> child state used manage where the dragging item will need
   // to be inserted.
@@ -1165,7 +1165,7 @@ class _ReorderableItemState extends State<_ReorderableItem> {
 
   @override
   void initState() {
-    _listState = SliverReorderableList.of(context);
+    _listState = SliverEnhancedReorderableList.of(context);
     _listState._registerItem(this);
     super.initState();
   }
@@ -1341,7 +1341,7 @@ class ReorderableDragStartListener extends StatelessWidget {
 
   void _startDragging(BuildContext context, PointerDownEvent event) {
     final DeviceGestureSettings? gestureSettings = MediaQuery.maybeGestureSettingsOf(context);
-    final SliverReorderableListState? list = SliverReorderableList.maybeOf(context);
+    final SliverReorderableListState? list = SliverEnhancedReorderableList.maybeOf(context);
     list?.startItemDragReorder(
       index: index,
       event: event,
